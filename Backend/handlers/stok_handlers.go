@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/yulius/inventory-backend/database"
@@ -103,11 +104,32 @@ func GetStok(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateStok(w http.ResponseWriter, r *http.Request){
-	var stok models.Stock
+	var input struct {
+		IdKategori   int    `json:"id_kategori"`
+		IdProduk     int    `json:"id_produk"`
+		MovementType string `json:"movement_type"`
+		Quantity     int    `json:"quantity"`
+		TglTrx       string `json:"tgl_trx"`
+	}
 
-	if err := json.NewDecoder(r.Body).Decode(&stok); err != nil {
-		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "Invalid JSON format: "+err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	// Parse tanggal dari string ke time.Time
+	tglTrx, err := time.Parse("2006-01-02", input.TglTrx)
+	if err != nil {
+		http.Error(w, "Invalid date format. Use YYYY-MM-DD: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	stok := models.Stock{
+		IdKategori:   input.IdKategori,
+		IdProduk:     input.IdProduk,
+		MovementType: input.MovementType,
+		Quantity:     input.Quantity,
+		TglTrx:       tglTrx,
 	}
 	
 	result := database.DB.Create(&stok)

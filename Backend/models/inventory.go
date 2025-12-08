@@ -25,12 +25,11 @@ type Produk struct {
 
 type Stock struct {
 	gorm.Model
-	Tgl_trx     time.Time `json:"tgl_trx"`  
-	Id_produk   int       `json:"id_produk"`
-	Id_kategori int       `json:"id_kategori"`
-	Qty_in      int       `json:"qty_in"`
-	Qty_out     int       `json:"qty_out"` 
-	
+	TglTrx      time.Time `json:"tgl_trx"`  
+	IdProduk    int       `json:"id_produk"`
+	IdKategori  int       `json:"id_kategori"`
+	MovementType string   `json:"movement_type"` // IN, OUT, ADJUST, TRANSFER 
+	Quantity    int       `json:"quantity"`
 }
 
 type Category struct {

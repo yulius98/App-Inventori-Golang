@@ -4,20 +4,22 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/yulius/inventory-backend/database"
 	"github.com/yulius/inventory-backend/models"
-	"gorm.io/gorm"
 )
 
 func GetProduk(w http.ResponseWriter, r *http.Request) {
 	type ProdukRespone struct {
 		Id  int       `json:"id"`  
-		Nama       string    `json:"nama"`
-		Kategori   string    `json:"kategori"`
-		Keterangan string    `json:"keterangan"`
-		Price      float64   `json:"price"`
+		Nama        string    `json:"nama"`
+		ID_Kategori string    `json:"id_kategori"`  
+		Kategori    string    `json:"kategori"`
+		Stok        int       `json:"stok"`
+		Keterangan  string    `json:"keterangan"`
+		Price       float64   `json:"price"`
 	}
 	
 	type PaginationResponse struct {
@@ -68,10 +70,22 @@ func GetProduk(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// Ambil data produk dengan pagination
+	// Ambil data produk dengan pagination dan hitung stok
 	result := database.DB.
 		Table("produks").
-		Select("produks.id AS id, produks.nama AS nama, categories.kategori AS kategori, produks.keterangan AS keterangan, produks.price as price").
+		Select(`produks.id AS id, 
+			produks.nama AS nama, 
+			categories.kategori AS kategori,
+			produks.id_kategori AS id_kategori, 
+			produks.keterangan AS keterangan, 
+			produks.price as price,
+			COALESCE(
+				(SELECT SUM(CASE WHEN movement_type = 'IN' THEN quantity ELSE 0 END) - 
+						SUM(CASE WHEN movement_type = 'OUT' THEN quantity ELSE 0 END)
+				 FROM stocks 
+				 WHERE stocks.id_produk = produks.id AND stocks.deleted_at IS NULL), 
+				0
+			) AS stok`).
 		Joins("JOIN categories ON produks.id_kategori = categories.id").
 		Where("produks.deleted_at IS NULL").
 		Offset(offset).
@@ -173,20 +187,37 @@ func DeleteProduk(w http.ResponseWriter, r *http.Request){
 }
 
 func SearchProduk(w http.ResponseWriter, r *http.Request){
-	var produk []models.Produk
-	
-	// Ambil parameter query 'nama' dari URL
-	nama := r.URL.Query().Get("nama")
-	
-	var result *gorm.DB
-	
-	// Jika parameter name kosong, return semua items
-	if nama == "" {
-		result = database.DB.Find(&produk)
-	} else {
-		// Cari items berdasarkan nama menggunakan LIKE untuk pencarian partial (case-insensitive untuk MySQL)
-		result = database.DB.Where("LOWER(nama) LIKE LOWER(?)", "%"+nama+"%").Find(&produk)
+	// Struct untuk response dengan field kategori (bukan id_kategori)
+	type ProdukResponse struct {
+		ID        uint       `json:"ID"`
+		CreatedAt time.Time  `json:"CreatedAt"`
+		UpdatedAt time.Time  `json:"UpdatedAt"`
+		DeletedAt *time.Time `json:"DeletedAt"`
+		Nama      string     `json:"nama"`
+		Kategori  string     `json:"kategori"`
+		Keterangan string    `json:"keterangan"`
+		Price     float64    `json:"price"`
 	}
+
+	var produk []ProdukResponse
+	nama := r.URL.Query().Get("nama")
+	kategori := r.URL.Query().Get("kategori")
+
+	dbQuery := database.DB.Table("produks").
+		Select("produks.id as ID, produks.created_at as CreatedAt, produks.updated_at as UpdatedAt, produks.deleted_at as DeletedAt, produks.nama, categories.kategori, produks.keterangan, produks.price").
+		Joins("JOIN categories ON produks.id_kategori = categories.id")
+
+	query := "produks.deleted_at IS NULL"
+	args := []interface{}{}
+	if nama != "" {
+		query += " AND LOWER(produks.nama) LIKE LOWER(?)"
+		args = append(args, "%"+nama+"%")
+	}
+	if kategori != "" {
+		query += " AND LOWER(categories.kategori) LIKE LOWER(?)"
+		args = append(args, "%"+kategori+"%")
+	}
+	result := dbQuery.Where(query, args...).Scan(&produk)
 	
 	if result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
