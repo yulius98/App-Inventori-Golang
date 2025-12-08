@@ -1,6 +1,6 @@
 # 📦 Aplikasi Inventori Golang
 
-Aplikasi manajemen inventori modern yang dibangun menggunakan **Go** untuk backend dan **Next.js** untuk frontend. Aplikasi ini menyediakan fitur lengkap untuk mengelola produk, kategori, dan stok barang.
+Aplikasi manajemen inventori modern yang dibangun menggunakan **Go** untuk backend dan **Vue.js** untuk frontend. Aplikasi ini menyediakan fitur lengkap untuk mengelola produk, kategori, dan stok barang.
 
 ## 🚀 Fitur Utama
 
@@ -21,21 +21,21 @@ Aplikasi manajemen inventori modern yang dibangun menggunakan **Go** untuk backe
 - **CORS** - Cross-Origin Resource Sharing
 
 ### Frontend
-- **Next.js 15.5.4** - React framework
-- **React 19.1.0** - UI library
+- **Vue.js 3.5.25** - Progressive JavaScript framework
 - **TypeScript** - Type safety
+- **Vue Router 4.6.3** - Official router for Vue.js
+- **Pinia 3.0.4** - State management
+- **Vite** - Build tool and dev server
 - **Tailwind CSS** - Styling
-- **Axios** - HTTP client
-- **React Hook Form** - Form handling
-- **Headless UI** - UI components
-- **Heroicons** - Icon library
+- **Axios 1.13.2** - HTTP client
+- **Element Plus 2.11.9** - UI component library
 
 ## 📋 Prasyarat
 
 Pastikan Anda telah menginstall:
 
 - [Go](https://golang.org/dl/) versi 1.20 atau lebih baru
-- [Node.js](https://nodejs.org/) versi 18 atau lebih baru
+- [Node.js](https://nodejs.org/) versi 20 atau lebih baru
 - [MySQL](https://dev.mysql.com/downloads/) versi 8.0 atau lebih baru
 - [Git](https://git-scm.com/) untuk clone repository
 
@@ -85,13 +85,13 @@ go run main.go
 
 Backend akan berjalan di `http://localhost:8080`
 
-### 4. Setup Frontend (Next.js)
+### 4. Setup Frontend (Vue.js)
 
 Buka terminal baru:
 
 ```bash
 # Masuk ke direktori frontend
-cd frontend
+cd FrontEnd-Vue
 
 # Install dependencies
 npm install
@@ -104,7 +104,7 @@ npm run dev
 yarn dev
 ```
 
-Frontend akan berjalan di `http://localhost:3000`
+Frontend akan berjalan di `http://localhost:5173` (default Vite port)
 
 ## 🔧 Penggunaan
 
@@ -118,11 +118,11 @@ go run main.go
 
 2. **Jalankan Frontend:** (di terminal terpisah)
 ```bash
-cd frontend
+cd FrontEnd-Vue
 npm run dev
 ```
 
-3. Buka browser dan akses `http://localhost:3000`
+3. Buka browser dan akses `http://localhost:5173`
 
 ### Build untuk Production
 
@@ -135,9 +135,9 @@ go build -o inventory-backend main.go
 
 #### Frontend:
 ```bash
-cd frontend
+cd FrontEnd-Vue
 npm run build
-npm start
+npm run preview
 ```
 
 ## 📖 API Endpoints
@@ -166,26 +166,54 @@ App Inventori Golang/
 ├── Backend/
 │   ├── main.go              # Entry point aplikasi
 │   ├── go.mod               # Go modules
+│   ├── CORS_README.md       # Dokumentasi CORS
 │   ├── database/
 │   │   └── db.go           # Konfigurasi database
 │   ├── handlers/            # Handler untuk setiap endpoint
 │   │   ├── produk_handlers.go
 │   │   ├── categori_handlers.go
-│   │   └── stok_handlers.go
+│   │   ├── stok_handlers.go
+│   │   └── options_handler.go
 │   ├── middleware/
 │   │   └── cors.go         # CORS middleware
 │   ├── models/
 │   │   └── inventory.go    # Model database
 │   └── routes/
 │       └── routes.go       # Routing konfigurasi
-└── frontend/
+└── FrontEnd-Vue/
     ├── src/
-    │   ├── app/             # Pages dan layouts
-    │   ├── components/      # Reusable components
-    │   ├── hooks/          # Custom React hooks
-    │   └── lib/            # Utilities dan API calls
+    │   ├── App.vue          # Root component
+    │   ├── main.ts          # Entry point
+    │   ├── style.css        # Global styles
+    │   ├── api/             # API service layer
+    │   │   ├── kategoriService.ts
+    │   │   ├── produkService.ts
+    │   │   └── stokService.ts
+    │   ├── components/      # Reusable Vue components
+    │   │   ├── AddKategori.vue
+    │   │   ├── AddStok.vue
+    │   │   ├── FormProduk.vue
+    │   │   ├── NavBar.vue
+    │   │   └── SalesOrder.vue
+    │   ├── helper/
+    │   │   └── api_url.ts  # API URL configuration
+    │   ├── router/
+    │   │   └── index.ts    # Vue Router configuration
+    │   ├── stores/          # Pinia state management
+    │   │   ├── counter.ts
+    │   │   └── modules/
+    │   │       ├── kategori.ts
+    │   │       ├── produk.ts
+    │   │       └── stok.ts
+    │   └── views/           # Page components
+    │       ├── KategoriListView.vue
+    │       ├── ProdukFormView.vue
+    │       └── ProdukListView.vue
+    ├── public/              # Static assets
     ├── package.json
-    └── next.config.ts
+    ├── vite.config.ts       # Vite configuration
+    ├── tailwind.config.ts   # Tailwind CSS config
+    └── tsconfig.json        # TypeScript configuration
 ```
 
 ## 🐛 Troubleshooting
@@ -199,7 +227,7 @@ App Inventori Golang/
 
 2. **Port Already in Use:**
    - Backend: Ubah port di `main.go` jika port 8080 sudah digunakan
-   - Frontend: Next.js akan otomatis mencari port yang tersedia
+   - Frontend: Vite akan otomatis mencari port yang tersedia (default 5173)
 
 3. **CORS Issues:**
    - Pastikan backend CORS sudah dikonfigurasi dengan benar
