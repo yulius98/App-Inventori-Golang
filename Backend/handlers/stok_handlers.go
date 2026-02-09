@@ -9,12 +9,13 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/yulius/inventory-backend/database"
 	"github.com/yulius/inventory-backend/models"
-	"gorm.io/gorm"
 )
 
 func GetStok(w http.ResponseWriter, r *http.Request) {
 	// Buat struct khusus untuk response stok
 	type StokResponse struct {
+		IdKategori   int    `json:"id_kategori"`
+		IdProduk     int    `json:"id_produk"`
 		Kategori    string  `json:"kategori"`
 		Produk      string  `json:"produk"`
 		TotalStock  int     `json:"total_stock"`
@@ -59,12 +60,25 @@ func GetStok(w http.ResponseWriter, r *http.Request) {
 
 	// Hitung total produk
 	countResult := database.DB.
-		Table("stocks").
-		Select("categories.kategori AS kategori, produks.nama AS produk, SUM(stocks.qty_in) - SUM(stocks.qty_out) AS total_stock, produks.price").
-		Joins("JOIN produks ON stocks.id_produk = produks.id").
+		Table("produks").
+		Select(`
+			categories.id AS id_kategori,
+			produks.id AS id_produk,
+			categories.kategori AS kategori,
+			produks.nama AS produk,
+			COALESCE(
+				SUM(CASE WHEN stocks.movement_type = 'IN' THEN stocks.quantity ELSE 0 END) -
+				SUM(CASE WHEN stocks.movement_type = 'OUT' THEN stocks.quantity ELSE 0 END),
+			0) AS total_stock,
+			produks.price
+		`).
+		Joins("LEFT JOIN stocks ON stocks.id_produk = produks.id").
 		Joins("JOIN categories ON produks.id_kategori = categories.id").
-		Group("stocks.id_produk").
+		Where("produks.deleted_at IS NULL").
+		Group("produks.id, categories.id").
+		Having("COALESCE(SUM(CASE WHEN stocks.movement_type = 'IN' THEN stocks.quantity ELSE 0 END) - SUM(CASE WHEN stocks.movement_type = 'OUT' THEN stocks.quantity ELSE 0 END), 0) > 0").
 		Count(&total)
+
 
 	if countResult.Error != nil {
 		http.Error(w, countResult.Error.Error(), http.StatusInternalServerError)
@@ -73,11 +87,23 @@ func GetStok(w http.ResponseWriter, r *http.Request) {
 
 
 	result := database.DB.
-		Table("stocks").
-		Select("categories.kategori AS kategori, produks.nama AS produk, SUM(stocks.qty_in) - SUM(stocks.qty_out) AS total_stock, produks.price").
-		Joins("JOIN produks ON stocks.id_produk = produks.id").
+		Table("produks").
+		Select(`
+			categories.id AS id_kategori,
+			produks.id AS id_produk,
+			categories.kategori AS kategori,
+			produks.nama AS produk,
+			COALESCE(
+				SUM(CASE WHEN stocks.movement_type = 'IN' THEN stocks.quantity ELSE 0 END) -
+				SUM(CASE WHEN stocks.movement_type = 'OUT' THEN stocks.quantity ELSE 0 END),
+			0) AS total_stock,
+			produks.price
+		`).
+		Joins("LEFT JOIN stocks ON stocks.id_produk = produks.id").
 		Joins("JOIN categories ON produks.id_kategori = categories.id").
-		Group("stocks.id_produk").
+		Where("produks.deleted_at IS NULL").
+		Group("produks.id, categories.id").
+		Having("COALESCE(SUM(CASE WHEN stocks.movement_type = 'IN' THEN stocks.quantity ELSE 0 END) - SUM(CASE WHEN stocks.movement_type = 'OUT' THEN stocks.quantity ELSE 0 END), 0) > 0").
 		Offset(offset).
 		Limit(limit).
 		Scan(&stok)
@@ -110,6 +136,8 @@ func CreateStok(w http.ResponseWriter, r *http.Request){
 		MovementType string `json:"movement_type"`
 		Quantity     int    `json:"quantity"`
 		TglTrx       string `json:"tgl_trx"`
+		Status		 string `json:"status"`
+		UserName     string `json:"user_name"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -130,6 +158,8 @@ func CreateStok(w http.ResponseWriter, r *http.Request){
 		MovementType: input.MovementType,
 		Quantity:     input.Quantity,
 		TglTrx:       tglTrx,
+		Status:       input.Status,
+		UserName:     input.UserName,
 	}
 	
 	result := database.DB.Create(&stok)
@@ -198,26 +228,49 @@ func DeleteStok(w http.ResponseWriter, r *http.Request){
 }
 
 func SearchStok(w http.ResponseWriter, r *http.Request){
-	var stokList []models.Stock
 	
-	// Ambil parameter query 'id_produk' dari URL
-	id_produk := r.URL.Query().Get("id_produk")
-	
-	var result *gorm.DB
-	
-	// Jika parameter id_produk kosong, return semua items
-	if id_produk == "" {
-		result = database.DB.Find(&stokList)
-	} else {
-		// Cari items berdasarkan id_produk
-		result = database.DB.Where("id_produk = ?", id_produk).Find(&stokList)
+	type StokResponse struct {
+		IdKategori   int    `json:"id_kategori"`
+		IdProduk     int    `json:"id_produk"`
+		Kategori    string  `json:"kategori"`
+		Produk      string  `json:"produk"`
+		TotalStock  int     `json:"total_stock"`
+		Price       float64 `json:"price"`
 	}
 	
+	var stokList []StokResponse
+	
+	// Ambil parameter query nama produk dari URL
+	produk := r.URL.Query().Get("produk")
+
+	dbQuery := database.DB.
+		Table("produks").
+		Select(`
+			categories.id AS id_kategori,
+			produks.id AS id_produk,
+			categories.kategori AS kategori,
+			produks.nama AS produk,
+			COALESCE(
+				SUM(CASE WHEN stocks.movement_type = 'IN' THEN stocks.quantity ELSE 0 END) -
+				SUM(CASE WHEN stocks.movement_type = 'OUT' THEN stocks.quantity ELSE 0 END),
+			0) AS total_stock,
+			produks.price
+		`).
+		Joins("LEFT JOIN stocks ON stocks.id_produk = produks.id").
+		Joins("JOIN categories ON produks.id_kategori = categories.id").
+		Where("produks.deleted_at IS NULL").
+		Group("produks.id, categories.id")
+
+	if produk != "" {
+		dbQuery = dbQuery.Where("LOWER(produks.nama) LIKE LOWER(?)", "%"+produk+"%")
+	}
+
+	result := dbQuery.Scan(&stokList)
 	if result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
 		return
 	}
-	
+
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(stokList)
 }

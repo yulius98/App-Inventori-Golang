@@ -57,7 +57,7 @@ func GetKategori(w http.ResponseWriter, r *http.Request) {
 
 	// Set default values
 	page := 1
-	limit := 2
+	limit := 10
 
 	// Parse page parameter
 	if pageStr != "" {
@@ -192,21 +192,33 @@ func DeleteKategori(w http.ResponseWriter, r *http.Request){
 	json.NewEncoder(w).Encode(map[string]string{"message": "Kategori deleted successfully"})
 }
 
-//func SearchKategori(w http.ResponseWriter, r *http.Request){
-//	var kategori []models.Category
-//	
-//	// Ambil parameter query 'name' dari URL
-//	kategori := r.URL.Query().Get("kategori")
-//	
-//	// Jika parameter name kosong, return semua items
-//	if kategori == "" {
-//		database.DB.Find(&items)
-//	} else {
-//		// Cari items berdasarkan nama menggunakan LIKE untuk pencarian partial (case-insensitive untuk MySQL)
-//		database.DB.Where("LOWER(name) LIKE LOWER(?)", "%"+name+"%").Find(&items)
-//	}
-//	
-//	// Set header response
-//	w.Header().Set("Content-Type", "application/json")
-//	json.NewEncoder(w).Encode(items)
-//}
+func SearchKategori(w http.ResponseWriter, r *http.Request){
+	
+	type KategoriRespone struct {
+		Id       int       `json:"id"`  
+		Kategori string    `json:"kategori"`
+	}
+	var kategoriList []KategoriRespone
+	
+	// Ambil parameter query 'name' dari URL
+	kategori := r.URL.Query().Get("kategori")
+	
+	dbQuery := database.DB.
+		Table("categories").
+		Where("categories.deleted_at IS NULL")
+
+	
+	if kategori != "" {
+		dbQuery = dbQuery.Where("LOWER(categories.kategori) LIKE LOWER(?)", "%"+kategori+"%")
+	} 
+
+	result := dbQuery.Scan(&kategoriList)
+	if result.Error != nil {
+		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Set header response
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(kategoriList)
+}

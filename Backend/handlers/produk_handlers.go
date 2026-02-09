@@ -17,7 +17,6 @@ func GetProduk(w http.ResponseWriter, r *http.Request) {
 		Nama        string    `json:"nama"`
 		ID_Kategori string    `json:"id_kategori"`  
 		Kategori    string    `json:"kategori"`
-		Stok        int       `json:"stok"`
 		Keterangan  string    `json:"keterangan"`
 		Price       float64   `json:"price"`
 	}
@@ -36,7 +35,7 @@ func GetProduk(w http.ResponseWriter, r *http.Request) {
 	
 	// Set default values
 	page := 1
-	limit := 20
+	limit := 10
 	
 	// Parse page parameter
 	if pageStr != "" {
@@ -78,14 +77,8 @@ func GetProduk(w http.ResponseWriter, r *http.Request) {
 			categories.kategori AS kategori,
 			produks.id_kategori AS id_kategori, 
 			produks.keterangan AS keterangan, 
-			produks.price as price,
-			COALESCE(
-				(SELECT SUM(CASE WHEN movement_type = 'IN' THEN quantity ELSE 0 END) - 
-						SUM(CASE WHEN movement_type = 'OUT' THEN quantity ELSE 0 END)
-				 FROM stocks 
-				 WHERE stocks.id_produk = produks.id AND stocks.deleted_at IS NULL), 
-				0
-			) AS stok`).
+			produks.price as price
+			`).
 		Joins("JOIN categories ON produks.id_kategori = categories.id").
 		Where("produks.deleted_at IS NULL").
 		Offset(offset).
@@ -200,6 +193,7 @@ func SearchProduk(w http.ResponseWriter, r *http.Request){
 	}
 
 	var produk []ProdukResponse
+
 	nama := r.URL.Query().Get("nama")
 	kategori := r.URL.Query().Get("kategori")
 
@@ -209,12 +203,13 @@ func SearchProduk(w http.ResponseWriter, r *http.Request){
 
 	query := "produks.deleted_at IS NULL"
 	args := []interface{}{}
+	
 	if nama != "" {
 		query += " AND LOWER(produks.nama) LIKE LOWER(?)"
 		args = append(args, "%"+nama+"%")
 	}
 	if kategori != "" {
-		query += " AND LOWER(categories.kategori) LIKE LOWER(?)"
+		query += " OR LOWER(categories.kategori) LIKE LOWER(?)"
 		args = append(args, "%"+kategori+"%")
 	}
 	result := dbQuery.Where(query, args...).Scan(&produk)

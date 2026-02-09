@@ -1,0 +1,3 @@
+- [x] Fix InventoryAdminPage.jsx: Add handleChange function and change api to Api
+- [x] Fix TopBar.jsx: Change stroke-width to strokeWidth in SVG
+- [x] Fix App.jsx: Add redirect route for "/"

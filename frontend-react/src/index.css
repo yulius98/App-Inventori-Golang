@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+/* Agar dark: mengikuti class .dark di html (bukan preferensi sistem) */
+@custom-variant dark (&&:where(.dark, .dark *));
+
+/* Dukungan dark mode: background & teks global */
+html.dark {
+  color-scheme: dark;
+}
+html.dark body {
+  background-color: #1f2937;
+  color: #f3f4f6;
+}
+
+@media print {
+  body {
+    background: white;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .print\:block,
+  .print\:block * {
+    visibility: visible;
+  }
+  .print\:block {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
