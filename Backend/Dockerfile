@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.25-slim AS builder
+FROM golang:1.25-alpine AS builder
 
 # Update packages for security patches and install dependencies
 RUN apt-get update && apt-get upgrade -y --no-install-recommends && \
