@@ -1,29 +1,24 @@
-version: '3.8'
-
 services:
-  # MySQL Database
+
   db:
     image: mysql:8.0
     container_name: inventory-db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
-      MYSQL_DATABASE: ${DB_NAME:-inventory_db}
-      MYSQL_USER: ${DB_USER:-inventory_user}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-inventory_password}
-    ports:
-      - "${DB_PORT:-3306}:3306"
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
       - inventory-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-rootpassword}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Backend API
   backend:
     build:
       context: ./Backend
@@ -31,31 +26,30 @@ services:
     container_name: inventory-backend
     restart: unless-stopped
     environment:
-      DB_USER: ${DB_USER:-inventory_user}
-      DB_PASSWORD: ${DB_PASSWORD:-inventory_password}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
       DB_HOST: db
       DB_PORT: "3306"
-      DB_NAME: ${DB_NAME:-inventory_db}
-      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production}
+      DB_NAME: ${DB_NAME}
+      JWT_SECRET: ${JWT_SECRET}
     ports:
-      - "${BACKEND_PORT:-8080}:8080"
+      - "8080:8080"
     depends_on:
       db:
         condition: service_healthy
     networks:
       - inventory-network
 
-  # Frontend
   frontend:
     build:
       context: ./frontend-react
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+        VITE_API_URL: ${VITE_API_URL}
     container_name: inventory-frontend
     restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT:-3000}:80"
+      - "3000:80"
     depends_on:
       - backend
     networks:
@@ -63,7 +57,6 @@ services:
 
 volumes:
   mysql_data:
-    driver: local
 
 networks:
   inventory-network:

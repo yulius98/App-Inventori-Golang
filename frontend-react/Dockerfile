@@ -1,42 +1,41 @@
-# Build stage
+# =========================
+# 1️⃣ Build Stage
+# =========================
 FROM node:22-alpine AS builder
-
-# Update packages for security patches
-RUN apk update && apk upgrade --no-cache
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json* ./
+# Copy only dependency files first (better caching)
+COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies (deterministic)
+RUN npm ci
 
-# Copy source code and env files
+# Copy source code
 COPY . .
 
 # Build argument for API URL
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 
-# Build the application
+# Build production assets
 RUN npm run build
 
-# Production stage
+
+# =========================
+# 2️⃣ Production Stage
+# =========================
 FROM nginx:1.27-alpine
 
-# Update packages for security patches
-RUN apk update && apk upgrade --no-cache && \
-    rm -rf /var/cache/apk/*
+# Remove default nginx static files
+RUN rm -rf /usr/share/nginx/html/*
 
-# Copy built files from builder
+# Copy built files
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port
 EXPOSE 80
 
-# Start nginx
 CMD ["nginx", "-g", "daemon off;"]

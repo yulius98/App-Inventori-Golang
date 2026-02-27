@@ -1,41 +1,39 @@
-# Build stage
+# =========================
+# 1️⃣ Build Stage
+# =========================
 FROM golang:1.25-alpine AS builder
 
-# Update packages for security patches and install dependencies
-RUN apt-get update && apt-get upgrade -y --no-install-recommends && \
-    apt-get install -y --no-install-recommends git ca-certificates && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+# Install git only if needed for private modules
+RUN apk add --no-cache git
 
-# Set working directory
 WORKDIR /app
 
-# Copy go mod files
+# Copy dependency files first (for caching)
 COPY go.mod go.sum ./
 
 # Download dependencies
 RUN go mod download
 
-# Copy source code
+# Copy source
 COPY . .
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+# Build static binary
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -ldflags="-s -w" -o app .
 
-# Final stage
-FROM debian:stable-slim
+# =========================
+# 2️⃣ Runtime Stage
+# =========================
+FROM gcr.io/distroless/base-debian12
 
-# Update packages for security patches and install ca-certificates
-RUN apt-get update && apt-get upgrade -y --no-install-recommends && \
-    apt-get install -y --no-install-recommends ca-certificates && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
 
-WORKDIR /root/
+# Copy binary from builder
+COPY --from=builder /app/app .
 
-# Copy the binary from builder
-COPY --from=builder /app/main .
+# Use non-root user (security best practice)
+USER nonroot:nonroot
 
-# Expose port
 EXPOSE 8080
 
-# Run the application
-CMD ["./main"]
+ENTRYPOINT ["/app/app"]
