@@ -711,7 +711,36 @@ npm run build
 
 ## 🚀 Deployment
 
-### Backend (Golang)
+### 🐳 Docker Deployment (Recommended)
+
+Cara termudah untuk deploy aplikasi ini adalah menggunakan Docker. Aplikasi sudah dilengkapi dengan Docker configuration yang siap pakai.
+
+**Quick Start:**
+```bash
+# 1. Clone repository
+git clone https://github.com/yulius98/App-Inventori-Golang.git
+cd App-Inventori-Golang
+
+# 2. Setup environment
+cp .env.example .env
+nano .env  # Edit dan sesuaikan konfigurasi
+
+# 3. Jalankan dengan Docker Compose
+docker-compose up -d --build
+
+# 4. Cek status
+docker-compose ps
+```
+
+**Akses Aplikasi:**
+- Frontend: http://your-ip:3000
+- Backend API: http://your-ip:8080
+
+📖 **Panduan Lengkap:** Lihat [QUICK_START_DOCKER.md](QUICK_START_DOCKER.md) dan [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md)
+
+### Manual Deployment
+
+#### Backend (Golang)
 
 **Build:**
 ```bash
@@ -724,7 +753,7 @@ go build -o inventory-backend.exe main.go
 - Setup systemd service (Linux) atau Windows Service
 - Gunakan reverse proxy (nginx)
 
-### Frontend (React)
+#### Frontend (React)
 
 **Build:**
 ```bash

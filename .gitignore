@@ -1,0 +1,45 @@
+# Environment variables
+.env
+.env.local
+.env.production
+.env.development
+
+# Backend
+Backend/.env
+Backend/inventory-backend
+Backend/inventory-backend.exe
+Backend/tmp/
+
+# Frontend
+frontend-react/node_modules/
+frontend-react/dist/
+frontend-react/.env
+frontend-react/.env.local
+frontend-react/.env.production
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+tmp/
+temp/
+
+# Build outputs
+dist/
+build/
+
+# Database backups
+*.sql
+backup*.sql
