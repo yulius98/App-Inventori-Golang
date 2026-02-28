@@ -8,7 +8,9 @@ import (
 func CORSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         origin := r.Header.Get("Origin")
-        if origin == "http://localhost:5173" || origin == "http://localhost:5174" {
+        if origin == "http://localhost:5173" || 
+		   origin == "http://localhost:5174" ||
+		   origin == "http://192.168.1.6:3000" {
             w.Header().Set("Access-Control-Allow-Origin", origin)
             w.Header().Set("Access-Control-Allow-Credentials", "true")
         }

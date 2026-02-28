@@ -9,6 +9,8 @@ services:
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
@@ -55,9 +57,28 @@ services:
     networks:
       - inventory-network
 
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: inventory-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
+    networks:
+      - inventory-network
+
+
 volumes:
   mysql_data:
 
 networks:
   inventory-network:
     driver: bridge
+
+
+
+
