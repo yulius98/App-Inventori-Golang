@@ -76,7 +76,7 @@ func GetStok(w http.ResponseWriter, r *http.Request) {
 		Joins("JOIN categories ON produks.id_kategori = categories.id").
 		Where("produks.deleted_at IS NULL").
 		Group("produks.id, categories.id").
-		Having("COALESCE(SUM(CASE WHEN stocks.movement_type = 'IN' THEN stocks.quantity ELSE 0 END) - SUM(CASE WHEN stocks.movement_type = 'OUT' THEN stocks.quantity ELSE 0 END), 0) > 0").
+		// Having("COALESCE(SUM(CASE WHEN stocks.movement_type = 'IN' THEN stocks.quantity ELSE 0 END) - SUM(CASE WHEN stocks.movement_type = 'OUT' THEN stocks.quantity ELSE 0 END), 0) > 0").
 		Count(&total)
 
 
@@ -103,7 +103,7 @@ func GetStok(w http.ResponseWriter, r *http.Request) {
 		Joins("JOIN categories ON produks.id_kategori = categories.id").
 		Where("produks.deleted_at IS NULL").
 		Group("produks.id, categories.id").
-		Having("COALESCE(SUM(CASE WHEN stocks.movement_type = 'IN' THEN stocks.quantity ELSE 0 END) - SUM(CASE WHEN stocks.movement_type = 'OUT' THEN stocks.quantity ELSE 0 END), 0) > 0").
+		// Having("COALESCE(SUM(CASE WHEN stocks.movement_type = 'IN' THEN stocks.quantity ELSE 0 END) - SUM(CASE WHEN stocks.movement_type = 'OUT' THEN stocks.quantity ELSE 0 END), 0) > 0").
 		Offset(offset).
 		Limit(limit).
 		Scan(&stok)
